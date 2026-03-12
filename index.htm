@@ -63,7 +63,6 @@
             height: 500px;
             cursor: crosshair;
             
-            /* Картка обрізана до крихти, але об'єкт всередині (фото) масштабується по центру */
             clip-path: polygon(49% 49%, 51% 49%, 51% 51%, 49% 51%);
             background: #000;
         }
@@ -71,7 +70,7 @@
         .game-card img {
             width: 500px;
             height: 500px;
-            object-fit: contain; /* Картинка повністю поміщається всередину */
+            object-fit: contain;
             display: block;
         }
 
@@ -92,24 +91,8 @@
         .game-card:hover .play-overlay {
             opacity: 1;
         }
-    </style>
-</head>
-<body>
 
-    <header class="header">
-        <h1>PLATON GAMES 10</h1>
-    </header>
-
-    <main class="games-container">
-        <a href="https://platon-lab.github.io/Sky-Dodge/" target="_blank" class="game-card">
-            <img src="Sky.png" alt="Sky Dodge">
-            <div class="play-overlay">
-                <span>🚀</span>
-            </div>
-        </a>
-    </main>
-
-    <style>
+        /* Пасхалка */
         .easter-active {
             animation: insaneBackground 2s infinite linear;
         }
@@ -158,6 +141,21 @@
             background: black;
         }
     </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>PLATON GAMES 10</h1>
+    </header>
+
+    <main class="games-container">
+        <a href="https://platon-lab.github.io/Sky-Dodge/" target="_blank" class="game-card">
+            <img src="Sky.png" alt="Sky Dodge">
+            <div class="play-overlay">
+                <span>🚀</span>
+            </div>
+        </a>
+    </main>
 
     <script>
         const card = document.querySelector('.game-card');
@@ -187,7 +185,6 @@
         let isInf = false;
         let audioCtx;
 
-        // Звук "Тинь!"
         function playTing() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -204,18 +201,29 @@
             osc.stop(audioCtx.currentTime + 0.3);
         }
 
+        // ОПТИМІЗОВАНА ФУНКЦІЯ ПОМИЛОК
         function spawnError(text = "ПОМИЛКА!") {
+            // Видаляємо найстарішу помилку, якщо їх більше 15
+            const currentErrors = document.querySelectorAll('.easter-error');
+            if (currentErrors.length > 15) {
+                currentErrors[0].remove();
+            }
+
             const err = document.createElement('div');
             err.className = 'easter-error';
             err.innerText = text;
-            err.style.left = (Math.random() * 80) + 'vw';
-            err.style.top = (Math.random() * 80) + 'vh';
-            err.style.transform = `rotate(${(Math.random() - 0.5) * 60}deg) scale(${Math.random() * 1.5 + 0.5})`;
+            err.style.left = (Math.random() * 70) + 'vw';
+            err.style.top = (Math.random() * 70) + 'vh';
+            err.style.transform = `rotate(${(Math.random() - 0.5) * 60}deg) scale(${Math.random() * 1.2 + 0.5})`;
             document.body.appendChild(err);
+
+            // Автоматичне видалення через 2 секунди для мобільних пристроїв
+            setTimeout(() => {
+                if (err.parentNode) err.remove();
+            }, 2000);
         }
 
         document.addEventListener('click', (e) => {
-            // Ігноруємо кліки по грі, поки пасхалка не почалася
             if (e.target.closest('.game-card') && phase === 'idle') return;
             
             if (phase === 'idle') {
@@ -226,10 +234,8 @@
                     tick();
                 }
             } else if (phase === 'infinity') {
-                // Запуск відео
                 video.style.display = 'block';
                 video.play().catch(() => {
-                    // Якщо браузер блокує відео без звуку, перекидаємо відразу
                     setTimeout(() => window.location.href = 'https://platon-lab.github.io/Monster/', 1000);
                 });
                 video.onended = () => {
@@ -245,7 +251,6 @@
             h1.innerText = "PLATON GAMES " + count;
             playTing();
 
-            // Зменшення картки
             if (count <= 20) {
                 let scale = Math.max(0, 1 - ((count - 10) * 0.1));
                 card.style.transform = `scale(${scale})`;
@@ -278,11 +283,11 @@
                     speed = 50;
                     tick();
                 }, 4000);
-                return; // Чекаємо 4 секунди
+                return;
             }
 
             if (count > 67 && count < 1000) {
-                speed = 15;
+                speed = 20; // Трохи сповільнив для стабільності на мобілках
                 spawnError(Math.random() > 0.5 ? "FATAL ERROR" : "GLITCH SYSTEM");
             }
 
@@ -295,10 +300,8 @@
                     h1.style.color = "#ff0000";
                     h1.style.textShadow = "0 0 50px #ff0000";
                     playTing(); 
-                    
-                    // ВИДАЛЯЄМО ВСІ ПОМИЛКИ ПРИ ДОСЯГНЕННІ НЕСКІНЧЕННОСТІ
                     document.querySelectorAll('.easter-error').forEach(el => el.remove());
-                }, 5000); // 5 секунд дуже швидкого рахунку до нескінченності
+                }, 5000);
             }
 
             if (count > 1000) {
