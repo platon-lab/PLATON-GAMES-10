@@ -109,5 +109,204 @@
         </a>
     </main>
 
+    <style>
+        .easter-active {
+            animation: insaneBackground 2s infinite linear;
+        }
+        @keyframes insaneBackground {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        .hand-easter {
+            position: fixed;
+            font-size: 150px;
+            z-index: 1000;
+            display: none;
+            text-shadow: 0 0 30px #00ffff;
+        }
+        .hand-left { left: 15%; animation: flyUpDown 1s infinite alternate ease-in-out; }
+        .hand-right { right: 15%; animation: flyDownUp 1s infinite alternate ease-in-out; }
+        @keyframes flyUpDown { 
+            0% { top: 10%; transform: rotate(-20deg); } 
+            100% { top: 60%; transform: rotate(10deg); } 
+        }
+        @keyframes flyDownUp { 
+            0% { top: 60%; transform: rotate(20deg); } 
+            100% { top: 10%; transform: rotate(-10deg); } 
+        }
+        .easter-error {
+            position: absolute;
+            background: rgba(255, 0, 50, 0.8);
+            color: #fff;
+            font-weight: 900;
+            padding: 15px 30px;
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            z-index: 500;
+            box-shadow: 0 0 20px #ff00ff, 0 0 40px red;
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+            font-size: 1.5rem;
+            text-transform: uppercase;
+        }
+        #end-video {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            object-fit: cover;
+            z-index: 99999;
+            display: none;
+            background: black;
+        }
+    </style>
+
+    <script>
+        const card = document.querySelector('.game-card');
+        const h1 = document.querySelector('h1');
+        card.style.transition = 'transform 0.5s ease';
+
+        // Руки
+        const handLeft = document.createElement('div');
+        handLeft.className = 'hand-easter hand-left';
+        handLeft.innerHTML = '✋';
+        const handRight = document.createElement('div');
+        handRight.className = 'hand-easter hand-right';
+        handRight.innerHTML = '✋';
+        document.body.appendChild(handLeft);
+        document.body.appendChild(handRight);
+
+        // Відео
+        const video = document.createElement('video');
+        video.id = 'end-video';
+        video.src = 'End.mp4';
+        document.body.appendChild(video);
+
+        let bgClicks = 0;
+        let phase = 'idle';
+        let count = 10;
+        let speed = 1000;
+        let isInf = false;
+        let audioCtx;
+
+        // Звук "Тинь!"
+        function playTing() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1600, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function spawnError(text = "ПОМИЛКА!") {
+            const err = document.createElement('div');
+            err.className = 'easter-error';
+            err.innerText = text;
+            err.style.left = (Math.random() * 80) + 'vw';
+            err.style.top = (Math.random() * 80) + 'vh';
+            err.style.transform = `rotate(${(Math.random() - 0.5) * 60}deg) scale(${Math.random() * 1.5 + 0.5})`;
+            document.body.appendChild(err);
+        }
+
+        document.addEventListener('click', (e) => {
+            // Ігноруємо кліки по грі, поки пасхалка не почалася
+            if (e.target.closest('.game-card') && phase === 'idle') return;
+            
+            if (phase === 'idle') {
+                bgClicks++;
+                if (bgClicks >= 20) {
+                    phase = 'animating';
+                    document.body.classList.add('easter-active');
+                    tick();
+                }
+            } else if (phase === 'infinity') {
+                // Запуск відео
+                video.style.display = 'block';
+                video.play().catch(() => {
+                    // Якщо браузер блокує відео без звуку, перекидаємо відразу
+                    setTimeout(() => window.location.href = 'https://platon-lab.github.io/Monster/', 1000);
+                });
+                video.onended = () => {
+                    window.location.href = 'https://platon-lab.github.io/Monster/';
+                };
+                phase = 'done';
+            }
+        });
+
+        function tick() {
+            if (isInf) return;
+            count++;
+            h1.innerText = "PLATON GAMES " + count;
+            playTing();
+
+            // Зменшення картки
+            if (count <= 20) {
+                let scale = Math.max(0, 1 - ((count - 10) * 0.1));
+                card.style.transform = `scale(${scale})`;
+                if (count === 20) card.style.display = 'none';
+            }
+
+            if (count >= 20 && count < 50) speed = 500;
+
+            if (count === 50) {
+                speed = 200;
+                spawnError("CRITICAL ERROR 50");
+            }
+
+            if (count > 50 && count < 67) {
+                if(Math.random() > 0.4) spawnError();
+            }
+
+            if (count === 67) {
+                handLeft.style.display = 'block';
+                handRight.style.display = 'block';
+                
+                const msg = new SpeechSynthesisUtterance("Ха! СИКС СЕВЕН! ПАСХАЛКА!");
+                msg.lang = 'uk-UA';
+                msg.rate = 1.2;
+                window.speechSynthesis.speak(msg);
+
+                setTimeout(() => {
+                    handLeft.style.display = 'none';
+                    handRight.style.display = 'none';
+                    speed = 50;
+                    tick();
+                }, 4000);
+                return; // Чекаємо 4 секунди
+            }
+
+            if (count > 67 && count < 1000) {
+                speed = 15;
+                spawnError(Math.random() > 0.5 ? "FATAL ERROR" : "GLITCH SYSTEM");
+            }
+
+            if (count === 1000) {
+                speed = 5; 
+                setTimeout(() => {
+                    isInf = true;
+                    phase = 'infinity';
+                    h1.innerText = "PLATON GAMES ∞";
+                    h1.style.color = "#ff0000";
+                    h1.style.textShadow = "0 0 50px #ff0000";
+                    playTing(); 
+                    
+                    // ВИДАЛЯЄМО ВСІ ПОМИЛКИ ПРИ ДОСЯГНЕННІ НЕСКІНЧЕННОСТІ
+                    document.querySelectorAll('.easter-error').forEach(el => el.remove());
+                }, 5000); // 5 секунд дуже швидкого рахунку до нескінченності
+            }
+
+            if (count > 1000) {
+                spawnError("OVERFLOW " + count);
+            }
+
+            setTimeout(tick, speed);
+        }
+    </script>
 </body>
 </html>
